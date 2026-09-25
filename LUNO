@@ -21,7 +21,7 @@ local LunoLibraryURL = "https://raw.githubusercontent.com/lyoraaHBX/LibraryLyora
 
 -- 2. DAFTAR GAME DENGAN SCRIPT KHUSUS (Tambahkan PlaceId & Link Game Script di Sini)
 local SupportedGames = {
-    [2753915549] = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/Games/BloxFruits.lua", -- Blox Fruits Sea 1
+    [76432282927124] = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/SundaVoice", -- Blox Fruits Sea 1
     [4442272183] = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/Games/BloxFruits.lua", -- Blox Fruits Sea 2
     [7449423635] = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/Games/BloxFruits.lua", -- Blox Fruits Sea 3
     [13772394625] = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/Games/BladeBall.lua",  -- Blade Ball
