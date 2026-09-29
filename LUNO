@@ -1,13 +1,3 @@
---[[
-    LUNO CYBER-TERMINAL LOADER v11.0 (Official Library Integration)
-    Features:
-      - Linked directly to official LUNO UI Library repository.
-      - Live Cyber Terminal Console Feed (Real-time system stream).
-      - Guaranteed UI Execution & Fallback Window.
-      - 100% Native Roblox Binary Fonts (Zero blank text bug).
-      - Clean, minimal, and 100% Emoji-Free.
---]]
-
 local TweenService = game:GetService("TweenService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -21,8 +11,8 @@ local LunoLibraryURL = "https://raw.githubusercontent.com/lyoraaHBX/LibraryLyora
 
 -- 2. DAFTAR GAME DENGAN SCRIPT KHUSUS (Tambahkan PlaceId & Link Game Script di Sini)
 local SupportedGames = {
-    [76432282927124] = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/SundaVoice", -- Blox Fruits Sea 1
-    [73897506680154] = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Snipeshitez", -- Blox Fruits Sea 2
+    [76432282927124] = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/SundaVoice", -- Sunda
+    [73897506680154] = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/IdleMafia", -- Idle Mafia
     [7449423635] = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/Games/BloxFruits.lua", -- Blox Fruits Sea 3
     [13772394625] = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/Games/BladeBall.lua",  -- Blade Ball
 }
