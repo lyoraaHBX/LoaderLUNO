@@ -14,7 +14,7 @@ local SupportedGames = {
     [76432282927124] = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/SundaVoice", -- Sunda
     [73897506680154] = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/IdleMafia", -- Idle Mafia
     [124216119978534] = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Ride%20A%20Pet", -- Ride A Pet
-    [13772394625] = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/Games/BladeBall.lua",  -- Blade Ball
+    [93978595733734] = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Violance%20District",  -- Violance District
 }
 
 -- Safe Parent GUI Function
