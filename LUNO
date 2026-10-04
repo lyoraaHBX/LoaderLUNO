@@ -8,21 +8,78 @@ local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
+local UniverseId = game.GameId
 
 local LunoLibraryURL = "https://raw.githubusercontent.com/lyoraaHBX/LibraryLyora-X/refs/heads/main/Lyora%20X"
 
 local GameDatabase = {
-    {Name = "Idle Mafia",        PlaceId = 73897506680154,  ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/IdleMafia"},
-    {Name = "Ride A Pet",        PlaceId = 124216119978534, ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/RideAPet"},
-    {Name = "Violance District", PlaceId = 93978595733734,  ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Violance%20District"},
-    {Name = "Combat Arena",        PlaceId = 15694891095,  ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Combat%20Arena"},
-    {Name = "Sniper Arena",        PlaceId = 122446657157717,  ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Sniper%20Arena"},
-    {Name = "AirDrop Arena",        PlaceId = 93091759101123,  ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/AirDrop%20Arena"},
+    {
+        Name = "Idle Mafia",
+        MatchType = "PlaceId",
+        MatchValue = 73897506680154,
+        PlaceIdForTeleport = 73897506680154,
+        ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/IdleMafia"
+    },
+    {
+        Name = "Ride A Pet",
+        MatchType = "PlaceId",
+        MatchValue = 124216119978534,
+        PlaceIdForTeleport = 124216119978534,
+        ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/RideAPet"
+    },
+    {
+        Name = "Violance District",
+        MatchType = "PlaceId",
+        MatchValue = 93978595733734,
+        PlaceIdForTeleport = 93978595733734,
+        ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Violance%20District"
+    },
+    {
+        Name = "Combat Arena",
+        MatchType = "UniverseId",
+        MatchValue = 5421899973,
+        PlaceIdForTeleport = 15694891095,
+        ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Combat%20Arena"
+    },
+    {
+        Name = "Sniper Arena",
+        MatchType = "UniverseId",
+        MatchValue = 9534705677,
+        PlaceIdForTeleport = 122446657157717,
+        ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Sniper%20Arena"
+    },
+    {
+        Name = "AirDrop Arena",
+        MatchType = "UniverseId",
+        MatchValue = 10031505426,
+        PlaceIdForTeleport = 93091759101123,
+        ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/AirDrop%20Arena"
+    },
 }
 
-local SupportedGames = {}
+local SupportedByPlaceId = {}
+local SupportedByUniverseId = {}
+
 for _, gameData in ipairs(GameDatabase) do
-    SupportedGames[gameData.PlaceId] = gameData.ScriptURL
+    if gameData.MatchType == "PlaceId" then
+        SupportedByPlaceId[gameData.MatchValue] = gameData
+    elseif gameData.MatchType == "UniverseId" then
+        SupportedByUniverseId[gameData.MatchValue] = gameData
+    end
+end
+
+local function FindMatchedGame()
+    local byPlace = SupportedByPlaceId[PlaceId]
+    if byPlace then
+        return byPlace
+    end
+
+    local byUniverse = SupportedByUniverseId[UniverseId]
+    if byUniverse then
+        return byUniverse
+    end
+
+    return nil
 end
 
 local function GetParentGui()
@@ -497,7 +554,6 @@ task.spawn(function()
     UpdateTerminal(0.15, "ENV_CHECK", "ENV: Identifying Client Hardware & Level...")
     UpdateTerminal(0.35, "NET_CONNECT", "NET: Handshake -> GitHub Raw Repository...")
     
-    -- Mengunduh LUNO UI Library
     local LunoLibrary = nil
     local libSuccess, libErr = pcall(function()
         LunoLibrary = loadstring(game:HttpGet(LunoLibraryURL))()
@@ -511,33 +567,26 @@ task.spawn(function()
         return
     end
 
-    UpdateTerminal(0.65, "SYS_ANALYSIS", "MATCH: Scanning Place ID [" .. tostring(PlaceId) .. "]...")
+    UpdateTerminal(0.65, "SYS_ANALYSIS", "MATCH: PlaceId[" .. tostring(PlaceId) .. "] / Universe[" .. tostring(UniverseId) .. "]...")
     
-    local TargetScriptURL = SupportedGames[PlaceId]
+    local MatchedGame = FindMatchedGame()
     
-    if TargetScriptURL then
-        ---------------------------------------------------------
-        -- MATCHED GAME MODE
-        ---------------------------------------------------------
-        UpdateTerminal(0.85, "GAME_MATCHED", "SUCCESS: Place ID Matched -> Loading Module...")
+    if MatchedGame then
+        UpdateTerminal(0.85, "GAME_MATCHED", "SUCCESS: " .. MatchedGame.Name .. " Matched -> Loading Module...")
         UpdateTerminal(1.00, "SYSTEM_READY", "LAUNCH: Executing Game Script Assembly...")
         task.wait(0.4)
         FadeOutHUD()
         
         local scriptSuccess, scriptErr = pcall(function()
-            loadstring(game:HttpGet(TargetScriptURL))()
+            loadstring(game:HttpGet(MatchedGame.ScriptURL))()
         end)
         
         if not scriptSuccess then
-            warn("[LUNO] Game Script Error: " .. tostring(scriptErr))
+            warn("[LUNO] Game Script Error (" .. MatchedGame.Name .. "): " .. tostring(scriptErr))
         end
     else
-        ---------------------------------------------------------
-        -- UNIVERSAL MODE (DIPERBAIKI + SUPPORTED GAMES LIST)
-        ---------------------------------------------------------
         UpdateTerminal(0.85, "NO_DIRECT_MATCH", "WARN: Place Unlisted -> Initializing Universal Kernel...")
         
-        -- Buat Window DULU sebelum fade out, biar kalau error bisa ketahuan di HUD
         local Window = nil
         local windowSuccess, windowErr = pcall(function()
             Window = LunoLibrary:CreateWindow({
@@ -559,7 +608,6 @@ task.spawn(function()
         task.wait(0.4)
         FadeOutHUD()
         
-        -- Populate isi Window (dibungkus pcall biar tidak silent fail)
         local populateSuccess, populateErr = pcall(function()
             local MainTab = Window:CreateTab("Universal Mode")
 
@@ -569,18 +617,17 @@ task.spawn(function()
                 Callback = function()
                     LunoLibrary:Notify({
                         Title = "Universal Mode",
-                        Content = "Game ini belum masuk daftar custom script LUNO.",
+                        Content = "Game ini belum terdaftar di database script custom LUNO.",
                         Duration = 3
                     })
                 end
             })
 
-            -- =====================================================
-            -- SECTION: SUPPORTED GAMES (List + Button Teleport)
-            -- =====================================================
             MainTab:CreateSection("Supported Games")
             
             for _, gameData in ipairs(GameDatabase) do
+                local teleportId = gameData.PlaceIdForTeleport or gameData.MatchValue
+                
                 MainTab:CreateButton({
                     Title = "🎮 " .. gameData.Name .. " — Join Game",
                     Callback = function()
@@ -590,15 +637,12 @@ task.spawn(function()
                             Duration = 2
                         })
                         pcall(function()
-                            TeleportService:Teleport(gameData.PlaceId, LocalPlayer)
+                            TeleportService:Teleport(teleportId, LocalPlayer)
                         end)
                     end
                 })
             end
 
-            -- =====================================================
-            -- SECTION: UNIVERSAL UTILITIES
-            -- =====================================================
             MainTab:CreateSection("Universal Utilities")
             MainTab:CreateButton({
                 Title = "Rejoin Server",
@@ -620,6 +664,19 @@ task.spawn(function()
                             Duration = 2
                         })
                     end
+                end
+            })
+
+            MainTab:CreateButton({
+                Title = "Show Debug Info (PlaceId / UniverseId)",
+                Callback = function()
+                    LunoLibrary:Notify({
+                        Title = "Debug Info",
+                        Content = "PlaceId: " .. tostring(PlaceId) .. " | UniverseId: " .. tostring(UniverseId),
+                        Duration = 5
+                    })
+                    print("[LUNO DEBUG] PlaceId: " .. tostring(PlaceId))
+                    print("[LUNO DEBUG] UniverseId: " .. tostring(UniverseId))
                 end
             })
         end)
