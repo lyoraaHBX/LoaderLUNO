@@ -25,7 +25,7 @@ local GameDatabase = {
         MatchType = "PlaceId",
         MatchValue = 124216119978534,
         PlaceIdForTeleport = 124216119978534,
-        ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/RideAPet"
+        ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/RidePet"
     },
     {
         Name = "Violance District",
