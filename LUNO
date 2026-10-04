@@ -1,9 +1,3 @@
---[[
-	LUNO Loader
-	Handles library bootstrap, game-specific module resolution,
-	and universal fallback initialization.
-]]
-
 local TweenService      = game:GetService("TweenService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players            = game:GetService("Players")
