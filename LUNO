@@ -17,7 +17,7 @@ local Config = {
 
 	GameModules = {
 		[73897506680154]  = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/IdleMafia",
-		[124216119978534] = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/RideAPet",
+		[124216119978534] = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/RidePet",
 		[93978595733734]  = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Violance%20District",
 	},
 }
