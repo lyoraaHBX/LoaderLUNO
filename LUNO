@@ -1,125 +1,227 @@
-local TweenService      = game:GetService("TweenService")
+local TweenService = game:GetService("TweenService")
 local MarketplaceService = game:GetService("MarketplaceService")
-local Players            = game:GetService("Players")
-local CoreGui            = game:GetService("CoreGui")
-local HttpService        = game:GetService("HttpService")
-local TeleportService    = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
-local PlaceId     = game.PlaceId
+local PlaceId = game.PlaceId
 
-----------------------------------------------------------------
--- Configuration
-----------------------------------------------------------------
+local LunoLibraryURL = "https://raw.githubusercontent.com/lyoraaHBX/LibraryLyora-X/refs/heads/main/Lyora%20X"
 
-local Config = {
-	LibraryURL = "https://raw.githubusercontent.com/lyoraaHBX/LibraryLyora-X/refs/heads/main/Lyora%20X",
-
-	GameModules = {
-		[73897506680154]  = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/IdleMafia",
-		[124216119978534] = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/RidePet",
-		[93978595733734]  = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Violance%20District",
-	},
+local GameDatabase = {
+    {Name = "Idle Mafia",        PlaceId = 73897506680154,  ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/IdleMafia"},
+    {Name = "Ride A Pet",        PlaceId = 124216119978534, ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/RideAPet"},
+    {Name = "Violance District", PlaceId = 93978595733734,  ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Violance%20District"},
+    {Name = "Combat Arena",        PlaceId = 15694891095,  ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Combat%20Arena"},
+    {Name = "Sniper Arena",        PlaceId = 122446657157717,  ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/Sniper%20Arena"},
+    {Name = "AirDrop Arena",        PlaceId = 93091759101123,  ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/AirDrop%20Arena"},
 }
 
-----------------------------------------------------------------
--- Network Layer
-----------------------------------------------------------------
-
-local Net = {}
-
-function Net.Get(url)
-	local bustedUrl = url .. "?v=" .. tostring(math.random(100000, 999999)) .. tostring(tick())
-
-	local body, lastError
-
-	local ok1, res1 = pcall(function()
-		return game:HttpGet(bustedUrl)
-	end)
-	if ok1 and res1 and #res1 > 0 then
-		body = res1
-	else
-		lastError = res1
-	end
-
-	if not body then
-		local ok2, res2 = pcall(function()
-			return game:HttpGetAsync(bustedUrl)
-		end)
-		if ok2 and res2 and #res2 > 0 then
-			body = res2
-		else
-			lastError = res2
-		end
-	end
-
-	if not body then
-		local requestFn = (syn and syn.request) or http_request or request
-		if requestFn then
-			local ok3, res3 = pcall(function()
-				local response = requestFn({ Url = bustedUrl, Method = "GET" })
-				return response and response.Body
-			end)
-			if ok3 and res3 and #res3 > 0 then
-				body = res3
-			else
-				lastError = res3
-			end
-		end
-	end
-
-	if not body then
-		return nil, lastError or "Unknown HTTP error"
-	end
-
-	return body, nil
+local SupportedGames = {}
+for _, gameData in ipairs(GameDatabase) do
+    SupportedGames[gameData.PlaceId] = gameData.ScriptURL
 end
 
-----------------------------------------------------------------
--- GUI Host Resolution
-----------------------------------------------------------------
-
-local function ResolveGuiParent()
-	if gethui then
-		return gethui()
-	elseif syn and syn.protect_gui then
-		local gui = Instance.new("ScreenGui")
-		syn.protect_gui(gui)
-		gui.Parent = CoreGui
-		return gui
-	elseif CoreGui:FindFirstChild("RobloxGui") then
-		return CoreGui
-	else
-		return LocalPlayer:WaitForChild("PlayerGui")
-	end
+local function GetParentGui()
+    if gethui then
+        return gethui()
+    elseif syn and syn.protect_gui then
+        local gui = Instance.new("ScreenGui")
+        syn.protect_gui(gui)
+        gui.Parent = CoreGui
+        return gui
+    elseif CoreGui:FindFirstChild("RobloxGui") then
+        return CoreGui
+    else
+        return LocalPlayer:WaitForChild("PlayerGui")
+    end
 end
 
-----------------------------------------------------------------
--- Terminal HUD Construction
-----------------------------------------------------------------
+---------------------------------------------------------
+-- WARNING SCREEN (TAP ANYWHERE TO CONTINUE) - RESPONSIVE
+---------------------------------------------------------
+local WarningGui = Instance.new("ScreenGui")
+WarningGui.Name = "LunoWarningScreen"
+WarningGui.ResetOnSpawn = false
+WarningGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+WarningGui.DisplayOrder = 999
+WarningGui.IgnoreGuiInset = true
+WarningGui.Parent = GetParentGui()
 
-local HUD = {}
+local Overlay = Instance.new("Frame")
+Overlay.Name = "Overlay"
+Overlay.Size = UDim2.new(1, 0, 1, 0)
+Overlay.Position = UDim2.new(0, 0, 0, 0)
+Overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Overlay.BackgroundTransparency = 1
+Overlay.BorderSizePixel = 0
+Overlay.ZIndex = 1
+Overlay.Parent = WarningGui
 
+local TapButton = Instance.new("TextButton")
+TapButton.Name = "TapButton"
+TapButton.Size = UDim2.new(1, 0, 1, 0)
+TapButton.Position = UDim2.new(0, 0, 0, 0)
+TapButton.BackgroundTransparency = 1
+TapButton.Text = ""
+TapButton.AutoButtonColor = false
+TapButton.ZIndex = 10
+TapButton.Parent = WarningGui
+
+local WarnBox = Instance.new("Frame")
+WarnBox.Name = "WarnBox"
+WarnBox.AnchorPoint = Vector2.new(0.5, 0.5)
+WarnBox.Position = UDim2.new(0.5, 0, 0.5, 0)
+WarnBox.Size = UDim2.new(0.9, 0, 0.55, 0)
+WarnBox.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
+WarnBox.BorderSizePixel = 0
+WarnBox.BackgroundTransparency = 1
+WarnBox.ZIndex = 2
+WarnBox.Parent = WarningGui
+
+local WarnBoxConstraint = Instance.new("UISizeConstraint")
+WarnBoxConstraint.MinSize = Vector2.new(300, 220)
+WarnBoxConstraint.MaxSize = Vector2.new(480, 320)
+WarnBoxConstraint.Parent = WarnBox
+
+local WarnCorner = Instance.new("UICorner") WarnCorner.CornerRadius = UDim.new(0, 8) WarnCorner.Parent = WarnBox
+local WarnStroke = Instance.new("UIStroke")
+WarnStroke.Color = Color3.fromRGB(255, 60, 60)
+WarnStroke.Thickness = 1.4
+WarnStroke.Transparency = 1
+WarnStroke.Parent = WarnBox
+
+local WarnPadding = Instance.new("UIPadding")
+WarnPadding.PaddingTop = UDim.new(0, 18)
+WarnPadding.PaddingBottom = UDim.new(0, 16)
+WarnPadding.PaddingLeft = UDim.new(0, 20)
+WarnPadding.PaddingRight = UDim.new(0, 20)
+WarnPadding.Parent = WarnBox
+
+local WarnLayout = Instance.new("UIListLayout")
+WarnLayout.FillDirection = Enum.FillDirection.Vertical
+WarnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+WarnLayout.SortOrder = Enum.SortOrder.LayoutOrder
+WarnLayout.Padding = UDim.new(0, 10)
+WarnLayout.Parent = WarnBox
+
+local WarnAccent = Instance.new("Frame")
+WarnAccent.Size = UDim2.new(1, 0, 0, 3)
+WarnAccent.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+WarnAccent.BorderSizePixel = 0
+WarnAccent.ZIndex = 2
+WarnAccent.BackgroundTransparency = 1
+WarnAccent.LayoutOrder = 0
+WarnAccent.Parent = WarnBox
+
+local WarnIcon = Instance.new("TextLabel")
+WarnIcon.Size = UDim2.new(1, 0, 0, 50)
+WarnIcon.BackgroundTransparency = 1
+WarnIcon.Text = "⚠"
+WarnIcon.TextColor3 = Color3.fromRGB(255, 70, 70)
+WarnIcon.TextScaled = true
+WarnIcon.Font = Enum.Font.GothamBold
+WarnIcon.TextTransparency = 1
+WarnIcon.ZIndex = 2
+WarnIcon.LayoutOrder = 1
+WarnIcon.Parent = WarnBox
+
+local WarnIconConstraint = Instance.new("UITextSizeConstraint")
+WarnIconConstraint.MinTextSize = 28
+WarnIconConstraint.MaxTextSize = 46
+WarnIconConstraint.Parent = WarnIcon
+
+local WarnTitle = Instance.new("TextLabel")
+WarnTitle.Size = UDim2.new(1, 0, 0, 30)
+WarnTitle.BackgroundTransparency = 1
+WarnTitle.Text = "P E R I N G A T A N"
+WarnTitle.TextColor3 = Color3.fromRGB(255, 80, 80)
+WarnTitle.TextScaled = true
+WarnTitle.Font = Enum.Font.GothamBold
+WarnTitle.TextTransparency = 1
+WarnTitle.ZIndex = 2
+WarnTitle.LayoutOrder = 2
+WarnTitle.Parent = WarnBox
+
+local WarnTitleConstraint = Instance.new("UITextSizeConstraint")
+WarnTitleConstraint.MinTextSize = 16
+WarnTitleConstraint.MaxTextSize = 24
+WarnTitleConstraint.Parent = WarnTitle
+
+local WarnDesc = Instance.new("TextLabel")
+WarnDesc.Size = UDim2.new(1, 0, 0, 90)
+WarnDesc.BackgroundTransparency = 1
+WarnDesc.Text = "Penggunaan script di mana pun dan apa pun jenis scriptnya memiliki RESIKO tersendiri, mulai dari BAN GAME hingga BAN ACCOUNT oleh pihak ROBLOX. Gunakan dengan kesadaran penuh dan tanggung jawab pribadi. Developer tidak bertanggung jawab atas kerugian apapun."
+WarnDesc.TextColor3 = Color3.fromRGB(200, 200, 210)
+WarnDesc.TextScaled = true
+WarnDesc.Font = Enum.Font.Gotham
+WarnDesc.TextWrapped = true
+WarnDesc.TextXAlignment = Enum.TextXAlignment.Center
+WarnDesc.TextYAlignment = Enum.TextYAlignment.Center
+WarnDesc.TextTransparency = 1
+WarnDesc.ZIndex = 2
+WarnDesc.LayoutOrder = 3
+WarnDesc.Parent = WarnBox
+
+local WarnDescConstraint = Instance.new("UITextSizeConstraint")
+WarnDescConstraint.MinTextSize = 12
+WarnDescConstraint.MaxTextSize = 16
+WarnDescConstraint.Parent = WarnDesc
+
+local Spacer = Instance.new("Frame")
+Spacer.Size = UDim2.new(1, 0, 0, 6)
+Spacer.BackgroundTransparency = 1
+Spacer.ZIndex = 2
+Spacer.LayoutOrder = 4
+Spacer.Parent = WarnBox
+
+local TapText = Instance.new("TextLabel")
+TapText.Size = UDim2.new(1, 0, 0, 24)
+TapText.BackgroundTransparency = 1
+TapText.Text = "TAP ANYWHERE TO CONTINUE"
+TapText.TextColor3 = Color3.fromRGB(0, 170, 255)
+TapText.TextScaled = true
+TapText.Font = Enum.Font.GothamBold
+TapText.TextTransparency = 1
+TapText.ZIndex = 2
+TapText.LayoutOrder = 5
+TapText.Parent = WarnBox
+
+local TapTextConstraint = Instance.new("UITextSizeConstraint")
+TapTextConstraint.MinTextSize = 11
+TapTextConstraint.MaxTextSize = 15
+TapTextConstraint.Parent = TapText
+
+---------------------------------------------------------
+-- CREATING CYBER TERMINAL HUD (RESPONSIVE)
+---------------------------------------------------------
 local LoadingGui = Instance.new("ScreenGui")
 LoadingGui.Name = "LunoCyberLoader"
 LoadingGui.ResetOnSpawn = false
 LoadingGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-LoadingGui.Parent = ResolveGuiParent()
+LoadingGui.IgnoreGuiInset = true
+LoadingGui.Parent = GetParentGui()
 
 local MainHUD = Instance.new("Frame")
 MainHUD.Name = "MainHUD"
-MainHUD.Size = UDim2.new(0, 440, 0, 220)
-MainHUD.Position = UDim2.new(0.5, -220, 0.5, -110)
+MainHUD.AnchorPoint = Vector2.new(0.5, 0.5)
+MainHUD.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainHUD.Size = UDim2.new(0.85, 0, 0.45, 0)
 MainHUD.BackgroundColor3 = Color3.fromRGB(8, 11, 18)
 MainHUD.BorderSizePixel = 0
 MainHUD.ClipsDescendants = true
 MainHUD.BackgroundTransparency = 1
 MainHUD.Parent = LoadingGui
 
-local HUDCorner = Instance.new("UICorner")
-HUDCorner.CornerRadius = UDim.new(0, 6)
-HUDCorner.Parent = MainHUD
+local MainHUDConstraint = Instance.new("UISizeConstraint")
+MainHUDConstraint.MinSize = Vector2.new(320, 200)
+MainHUDConstraint.MaxSize = Vector2.new(460, 240)
+MainHUDConstraint.Parent = MainHUD
 
+local HUDCorner = Instance.new("UICorner") HUDCorner.CornerRadius = UDim.new(0, 6) HUDCorner.Parent = MainHUD
 local HUDStroke = Instance.new("UIStroke")
 HUDStroke.Color = Color3.fromRGB(0, 130, 255)
 HUDStroke.Thickness = 1.2
@@ -144,11 +246,16 @@ BrandTitle.Size = UDim2.new(0, 180, 1, 0)
 BrandTitle.BackgroundTransparency = 1
 BrandTitle.Text = "L U N O // SYSTEM"
 BrandTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-BrandTitle.TextSize = 16
-BrandTitle.Font = Enum.Font.SourceSansBold
+BrandTitle.TextScaled = true
+BrandTitle.Font = Enum.Font.GothamBold
 BrandTitle.TextXAlignment = Enum.TextXAlignment.Left
 BrandTitle.TextTransparency = 1
 BrandTitle.Parent = TopBar
+
+local BrandTitleConstraint = Instance.new("UITextSizeConstraint")
+BrandTitleConstraint.MinTextSize = 12
+BrandTitleConstraint.MaxTextSize = 17
+BrandTitleConstraint.Parent = BrandTitle
 
 local StatusLED = Instance.new("Frame")
 StatusLED.Size = UDim2.new(0, 8, 0, 8)
@@ -156,10 +263,7 @@ StatusLED.Position = UDim2.new(1, -110, 0.5, -4)
 StatusLED.BackgroundColor3 = Color3.fromRGB(0, 255, 170)
 StatusLED.BackgroundTransparency = 1
 StatusLED.Parent = TopBar
-
-local LEDCorner = Instance.new("UICorner")
-LEDCorner.CornerRadius = UDim.new(1, 0)
-LEDCorner.Parent = StatusLED
+local LEDCorner = Instance.new("UICorner") LEDCorner.CornerRadius = UDim.new(1, 0) LEDCorner.Parent = StatusLED
 
 local SysStatusLbl = Instance.new("TextLabel")
 SysStatusLbl.Size = UDim2.new(0, 95, 1, 0)
@@ -167,11 +271,16 @@ SysStatusLbl.Position = UDim2.new(1, -95, 0, 0)
 SysStatusLbl.BackgroundTransparency = 1
 SysStatusLbl.Text = "SYS_ACTIVE"
 SysStatusLbl.TextColor3 = Color3.fromRGB(0, 255, 170)
-SysStatusLbl.TextSize = 11
-SysStatusLbl.Font = Enum.Font.Code
+SysStatusLbl.TextScaled = true
+SysStatusLbl.Font = Enum.Font.GothamBold
 SysStatusLbl.TextXAlignment = Enum.TextXAlignment.Right
 SysStatusLbl.TextTransparency = 1
 SysStatusLbl.Parent = TopBar
+
+local SysStatusConstraint = Instance.new("UITextSizeConstraint")
+SysStatusConstraint.MinTextSize = 9
+SysStatusConstraint.MaxTextSize = 12
+SysStatusConstraint.Parent = SysStatusLbl
 
 local TerminalFrame = Instance.new("Frame")
 TerminalFrame.Size = UDim2.new(1, -30, 0, 105)
@@ -181,10 +290,7 @@ TerminalFrame.BorderSizePixel = 0
 TerminalFrame.BackgroundTransparency = 1
 TerminalFrame.Parent = MainHUD
 
-local TermCorner = Instance.new("UICorner")
-TermCorner.CornerRadius = UDim.new(0, 4)
-TermCorner.Parent = TerminalFrame
-
+local TermCorner = Instance.new("UICorner") TermCorner.CornerRadius = UDim.new(0, 4) TermCorner.Parent = TerminalFrame
 local TermStroke = Instance.new("UIStroke")
 TermStroke.Color = Color3.fromRGB(20, 35, 55)
 TermStroke.Thickness = 1
@@ -197,8 +303,8 @@ ConsoleText.Position = UDim2.new(0, 8, 0, 6)
 ConsoleText.BackgroundTransparency = 1
 ConsoleText.Text = "[00.00] BOOT: Initializing LUNO Kernel...\n"
 ConsoleText.TextColor3 = Color3.fromRGB(110, 160, 200)
-ConsoleText.TextSize = 10
-ConsoleText.Font = Enum.Font.Code
+ConsoleText.TextSize = 11
+ConsoleText.Font = Enum.Font.Gotham
 ConsoleText.TextXAlignment = Enum.TextXAlignment.Left
 ConsoleText.TextYAlignment = Enum.TextYAlignment.Top
 ConsoleText.TextTransparency = 1
@@ -218,9 +324,7 @@ MeterTrack.BorderSizePixel = 0
 MeterTrack.BackgroundTransparency = 1
 MeterTrack.Parent = ProgressHolder
 
-local MeterCorner = Instance.new("UICorner")
-MeterCorner.CornerRadius = UDim.new(1, 0)
-MeterCorner.Parent = MeterTrack
+local MeterCorner = Instance.new("UICorner") MeterCorner.CornerRadius = UDim.new(1, 0) MeterCorner.Parent = MeterTrack
 
 local MeterFill = Instance.new("Frame")
 MeterFill.Size = UDim2.new(0, 0, 1, 0)
@@ -228,14 +332,12 @@ MeterFill.BackgroundColor3 = Color3.fromRGB(0, 130, 255)
 MeterFill.BorderSizePixel = 0
 MeterFill.Parent = MeterTrack
 
-local MeterFillCorner = Instance.new("UICorner")
-MeterFillCorner.CornerRadius = UDim.new(1, 0)
-MeterFillCorner.Parent = MeterFill
+local MeterFillCorner = Instance.new("UICorner") MeterFillCorner.CornerRadius = UDim.new(1, 0) MeterFillCorner.Parent = MeterFill
 
 local MeterGradient = Instance.new("UIGradient")
 MeterGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 100, 255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 220, 255)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 100, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 220, 255))
 })
 MeterGradient.Parent = MeterFill
 
@@ -245,11 +347,16 @@ ProgressPercent.Position = UDim2.new(1, -60, 0, 0)
 ProgressPercent.BackgroundTransparency = 1
 ProgressPercent.Text = "0%"
 ProgressPercent.TextColor3 = Color3.fromRGB(0, 170, 255)
-ProgressPercent.TextSize = 11
-ProgressPercent.Font = Enum.Font.Code
+ProgressPercent.TextScaled = true
+ProgressPercent.Font = Enum.Font.GothamBold
 ProgressPercent.TextXAlignment = Enum.TextXAlignment.Right
 ProgressPercent.TextTransparency = 1
 ProgressPercent.Parent = ProgressHolder
+
+local ProgressPercentConstraint = Instance.new("UITextSizeConstraint")
+ProgressPercentConstraint.MinTextSize = 9
+ProgressPercentConstraint.MaxTextSize = 12
+ProgressPercentConstraint.Parent = ProgressPercent
 
 local ProgressStatus = Instance.new("TextLabel")
 ProgressStatus.Size = UDim2.new(1, -70, 0, 14)
@@ -257,194 +364,275 @@ ProgressStatus.Position = UDim2.new(0, 0, 0, 0)
 ProgressStatus.BackgroundTransparency = 1
 ProgressStatus.Text = "SYSTEM_PRELOAD"
 ProgressStatus.TextColor3 = Color3.fromRGB(130, 150, 180)
-ProgressStatus.TextSize = 10
-ProgressStatus.Font = Enum.Font.TitilliumWeb
+ProgressStatus.TextScaled = true
+ProgressStatus.Font = Enum.Font.Gotham
 ProgressStatus.TextXAlignment = Enum.TextXAlignment.Left
 ProgressStatus.TextTransparency = 1
 ProgressStatus.Parent = ProgressHolder
 
-----------------------------------------------------------------
--- HUD Behavior
-----------------------------------------------------------------
+local ProgressStatusConstraint = Instance.new("UITextSizeConstraint")
+ProgressStatusConstraint.MinTextSize = 9
+ProgressStatusConstraint.MaxTextSize = 11
+ProgressStatusConstraint.Parent = ProgressStatus
 
+---------------------------------------------------------
+-- WARNING SCREEN LOGIC
+---------------------------------------------------------
+local function FadeInWarning()
+    TweenService:Create(Overlay, TweenInfo.new(0.4), {BackgroundTransparency = 0.35}):Play()
+    TweenService:Create(WarnBox, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
+    TweenService:Create(WarnStroke, TweenInfo.new(0.4), {Transparency = 0.2}):Play()
+    TweenService:Create(WarnAccent, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
+    TweenService:Create(WarnIcon, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
+    TweenService:Create(WarnTitle, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
+    TweenService:Create(WarnDesc, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
+    TweenService:Create(TapText, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
+    task.wait(0.4)
+end
+
+local function FadeOutWarning()
+    TweenService:Create(Overlay, TweenInfo.new(0.35), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(WarnBox, TweenInfo.new(0.35), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(WarnStroke, TweenInfo.new(0.35), {Transparency = 1}):Play()
+    TweenService:Create(WarnAccent, TweenInfo.new(0.35), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(WarnIcon, TweenInfo.new(0.35), {TextTransparency = 1}):Play()
+    TweenService:Create(WarnTitle, TweenInfo.new(0.35), {TextTransparency = 1}):Play()
+    TweenService:Create(WarnDesc, TweenInfo.new(0.35), {TextTransparency = 1}):Play()
+    TweenService:Create(TapText, TweenInfo.new(0.35), {TextTransparency = 1}):Play()
+    task.wait(0.35)
+    WarningGui:Destroy()
+end
+
+local blinkRunning = true
+task.spawn(function()
+    while blinkRunning do
+        TweenService:Create(TapText, TweenInfo.new(0.6), {TextTransparency = 0.8}):Play()
+        task.wait(0.6)
+        if not blinkRunning then break end
+        TweenService:Create(TapText, TweenInfo.new(0.6), {TextTransparency = 0}):Play()
+        task.wait(0.6)
+    end
+end)
+
+FadeInWarning()
+
+local tapped = false
+local function OnTap()
+    if tapped then return end
+    tapped = true
+    blinkRunning = false
+    FadeOutWarning()
+end
+
+TapButton.MouseButton1Click:Connect(OnTap)
+TapButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch 
+    or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        OnTap()
+    end
+end)
+
+repeat task.wait() until tapped == true and WarningGui.Parent == nil
+
+---------------------------------------------------------
+-- TERMINAL LOGIC & ANIMATIONS
+---------------------------------------------------------
 local LogHistory = {}
 
-function HUD.Log(message)
-	local timestamp = string.format("[%05.2f]", os.clock() % 100)
-	table.insert(LogHistory, timestamp .. " " .. tostring(message))
-	if #LogHistory > 6 then
-		table.remove(LogHistory, 1)
-	end
-	ConsoleText.Text = table.concat(LogHistory, "\n")
+local function AddConsoleLog(msg)
+    local timestamp = string.format("[%05.2f]", os.clock() % 100)
+    table.insert(LogHistory, timestamp .. " " .. msg)
+    if #LogHistory > 6 then
+        table.remove(LogHistory, 1)
+    end
+    ConsoleText.Text = table.concat(LogHistory, "\n")
 end
 
-function HUD.FadeIn()
-	local tweenInfo = TweenInfo.new(0.35)
-	TweenService:Create(MainHUD, tweenInfo, { BackgroundTransparency = 0 }):Play()
-	TweenService:Create(HUDStroke, tweenInfo, { Transparency = 0.3 }):Play()
-	TweenService:Create(BrandTitle, tweenInfo, { TextTransparency = 0 }):Play()
-	TweenService:Create(StatusLED, tweenInfo, { BackgroundTransparency = 0 }):Play()
-	TweenService:Create(SysStatusLbl, tweenInfo, { TextTransparency = 0 }):Play()
-	TweenService:Create(TerminalFrame, tweenInfo, { BackgroundTransparency = 0 }):Play()
-	TweenService:Create(TermStroke, tweenInfo, { Transparency = 0 }):Play()
-	TweenService:Create(ConsoleText, tweenInfo, { TextTransparency = 0 }):Play()
-	TweenService:Create(MeterTrack, tweenInfo, { BackgroundTransparency = 0 }):Play()
-	TweenService:Create(ProgressPercent, tweenInfo, { TextTransparency = 0 }):Play()
-	TweenService:Create(ProgressStatus, tweenInfo, { TextTransparency = 0 }):Play()
-	task.wait(0.35)
+local function FadeInHUD()
+    TweenService:Create(MainHUD, TweenInfo.new(0.35), {BackgroundTransparency = 0}):Play()
+    TweenService:Create(HUDStroke, TweenInfo.new(0.35), {Transparency = 0.3}):Play()
+    TweenService:Create(BrandTitle, TweenInfo.new(0.35), {TextTransparency = 0}):Play()
+    TweenService:Create(StatusLED, TweenInfo.new(0.35), {BackgroundTransparency = 0}):Play()
+    TweenService:Create(SysStatusLbl, TweenInfo.new(0.35), {TextTransparency = 0}):Play()
+    TweenService:Create(TerminalFrame, TweenInfo.new(0.35), {BackgroundTransparency = 0}):Play()
+    TweenService:Create(TermStroke, TweenInfo.new(0.35), {Transparency = 0}):Play()
+    TweenService:Create(ConsoleText, TweenInfo.new(0.35), {TextTransparency = 0}):Play()
+    TweenService:Create(MeterTrack, TweenInfo.new(0.35), {BackgroundTransparency = 0}):Play()
+    TweenService:Create(ProgressPercent, TweenInfo.new(0.35), {TextTransparency = 0}):Play()
+    TweenService:Create(ProgressStatus, TweenInfo.new(0.35), {TextTransparency = 0}):Play()
+    task.wait(0.35)
 end
 
-function HUD.Update(targetPercent, statusTag, logMessage)
-	if logMessage then
-		HUD.Log(logMessage)
-	end
-	ProgressStatus.Text = statusTag
-	ProgressPercent.Text = tostring(math.floor(targetPercent * 100)) .. "%"
-	TweenService:Create(
-		MeterFill,
-		TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-		{ Size = UDim2.new(targetPercent, 0, 1, 0) }
-	):Play()
-	task.wait(0.28)
+local function UpdateTerminal(targetPercent, statusTag, consoleMsg)
+    if consoleMsg then AddConsoleLog(consoleMsg) end
+    ProgressStatus.Text = statusTag
+    ProgressPercent.Text = tostring(math.floor(targetPercent * 100)) .. "%"
+    TweenService:Create(MeterFill, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(targetPercent, 0, 1, 0)}):Play()
+    task.wait(0.28)
 end
 
-function HUD.FadeOut()
-	local tweenInfo = TweenInfo.new(0.35)
-	TweenService:Create(MainHUD, tweenInfo, { BackgroundTransparency = 1 }):Play()
-	TweenService:Create(HUDStroke, tweenInfo, { Transparency = 1 }):Play()
-	TweenService:Create(BrandTitle, tweenInfo, { TextTransparency = 1 }):Play()
-	TweenService:Create(StatusLED, tweenInfo, { BackgroundTransparency = 1 }):Play()
-	TweenService:Create(SysStatusLbl, tweenInfo, { TextTransparency = 1 }):Play()
-	TweenService:Create(TerminalFrame, tweenInfo, { BackgroundTransparency = 1 }):Play()
-	TweenService:Create(TermStroke, tweenInfo, { Transparency = 1 }):Play()
-	TweenService:Create(ConsoleText, tweenInfo, { TextTransparency = 1 }):Play()
-	TweenService:Create(MeterTrack, tweenInfo, { BackgroundTransparency = 1 }):Play()
-	TweenService:Create(MeterFill, tweenInfo, { BackgroundTransparency = 1 }):Play()
-	TweenService:Create(ProgressPercent, tweenInfo, { TextTransparency = 1 }):Play()
-	TweenService:Create(ProgressStatus, tweenInfo, { TextTransparency = 1 }):Play()
-	task.wait(0.35)
-	LoadingGui:Destroy()
+local function FadeOutHUD()
+    TweenService:Create(MainHUD, TweenInfo.new(0.35), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(HUDStroke, TweenInfo.new(0.35), {Transparency = 1}):Play()
+    TweenService:Create(BrandTitle, TweenInfo.new(0.35), {TextTransparency = 1}):Play()
+    TweenService:Create(StatusLED, TweenInfo.new(0.35), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(SysStatusLbl, TweenInfo.new(0.35), {TextTransparency = 1}):Play()
+    TweenService:Create(TerminalFrame, TweenInfo.new(0.35), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(TermStroke, TweenInfo.new(0.35), {Transparency = 1}):Play()
+    TweenService:Create(ConsoleText, TweenInfo.new(0.35), {TextTransparency = 1}):Play()
+    TweenService:Create(MeterTrack, TweenInfo.new(0.35), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(MeterFill, TweenInfo.new(0.35), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(ProgressPercent, TweenInfo.new(0.35), {TextTransparency = 1}):Play()
+    TweenService:Create(ProgressStatus, TweenInfo.new(0.35), {TextTransparency = 1}):Play()
+    task.wait(0.35)
+    LoadingGui:Destroy()
 end
 
-----------------------------------------------------------------
--- Universal Fallback Window
-----------------------------------------------------------------
-
-local function LaunchUniversalMode(LunoLibrary)
-	local Window = LunoLibrary:CreateWindow({
-		Title = "LUNO",
-		SubTitle = "Universal",
-		Discord = "https://discord.gg/lunar",
-	})
-
-	local MainTab = Window:CreateTab("Universal Mode")
-
-	MainTab:CreateSection("System Info")
-	MainTab:CreateButton({
-		Title = "LUNO Universal Engine Active",
-		Callback = function()
-			LunoLibrary:Notify({
-				Title = "Universal Mode",
-				Content = "This game is not in the custom supported list.",
-				Duration = 3,
-			})
-		end,
-	})
-
-	MainTab:CreateSection("Universal Utilities")
-	MainTab:CreateButton({
-		Title = "Rejoin Server",
-		Callback = function()
-			TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-		end,
-	})
-end
-
-----------------------------------------------------------------
--- Bootstrap Sequence
-----------------------------------------------------------------
-
+---------------------------------------------------------
+-- EXECUTION FLOW
+---------------------------------------------------------
 task.spawn(function()
-	HUD.FadeIn()
+    FadeInHUD()
+    
+    UpdateTerminal(0.15, "ENV_CHECK", "ENV: Identifying Client Hardware & Level...")
+    UpdateTerminal(0.35, "NET_CONNECT", "NET: Handshake -> GitHub Raw Repository...")
+    
+    -- Mengunduh LUNO UI Library
+    local LunoLibrary = nil
+    local libSuccess, libErr = pcall(function()
+        LunoLibrary = loadstring(game:HttpGet(LunoLibraryURL))()
+    end)
+    
+    if not libSuccess or not LunoLibrary then
+        UpdateTerminal(0.50, "NET_ERROR", "ERR: Failed to fetch UI Library!")
+        warn("[LUNO] Library Load Error: " .. tostring(libErr))
+        task.wait(2)
+        FadeOutHUD()
+        return
+    end
 
-	HUD.Update(0.15, "ENV_CHECK", "ENV: Identifying Client Hardware & Level...")
-	HUD.Update(0.30, "NET_CONNECT", "NET: Handshake -> GitHub Raw Repository...")
+    UpdateTerminal(0.65, "SYS_ANALYSIS", "MATCH: Scanning Place ID [" .. tostring(PlaceId) .. "]...")
+    
+    local TargetScriptURL = SupportedGames[PlaceId]
+    
+    if TargetScriptURL then
+        ---------------------------------------------------------
+        -- MATCHED GAME MODE
+        ---------------------------------------------------------
+        UpdateTerminal(0.85, "GAME_MATCHED", "SUCCESS: Place ID Matched -> Loading Module...")
+        UpdateTerminal(1.00, "SYSTEM_READY", "LAUNCH: Executing Game Script Assembly...")
+        task.wait(0.4)
+        FadeOutHUD()
+        
+        local scriptSuccess, scriptErr = pcall(function()
+            loadstring(game:HttpGet(TargetScriptURL))()
+        end)
+        
+        if not scriptSuccess then
+            warn("[LUNO] Game Script Error: " .. tostring(scriptErr))
+        end
+    else
+        ---------------------------------------------------------
+        -- UNIVERSAL MODE (DIPERBAIKI + SUPPORTED GAMES LIST)
+        ---------------------------------------------------------
+        UpdateTerminal(0.85, "NO_DIRECT_MATCH", "WARN: Place Unlisted -> Initializing Universal Kernel...")
+        
+        -- Buat Window DULU sebelum fade out, biar kalau error bisa ketahuan di HUD
+        local Window = nil
+        local windowSuccess, windowErr = pcall(function()
+            Window = LunoLibrary:CreateWindow({
+                Title = "LUNO",
+                SubTitle = "Universal",
+                Discord = "https://discord.gg/lunar"
+            })
+        end)
+        
+        if not windowSuccess or not Window then
+            UpdateTerminal(1.00, "UI_ERROR", "ERR: Failed to build Universal Window!")
+            warn("[LUNO] CreateWindow Error: " .. tostring(windowErr))
+            task.wait(2.5)
+            FadeOutHUD()
+            return
+        end
+        
+        UpdateTerminal(1.00, "SYSTEM_READY", "LAUNCH: Opening Universal LUNO Window...")
+        task.wait(0.4)
+        FadeOutHUD()
+        
+        -- Populate isi Window (dibungkus pcall biar tidak silent fail)
+        local populateSuccess, populateErr = pcall(function()
+            local MainTab = Window:CreateTab("Universal Mode")
 
-	local librarySource, libErr = Net.Get(Config.LibraryURL)
-	if not librarySource then
-		HUD.Update(0.50, "NET_ERROR", "ERR: Failed to fetch UI Library! (" .. tostring(libErr) .. ")")
-		task.wait(2)
-		HUD.FadeOut()
-		return
-	end
+            MainTab:CreateSection("System Info")
+            MainTab:CreateButton({
+                Title = "LUNO Universal Engine Active",
+                Callback = function()
+                    LunoLibrary:Notify({
+                        Title = "Universal Mode",
+                        Content = "Game ini belum masuk daftar custom script LUNO.",
+                        Duration = 3
+                    })
+                end
+            })
 
-	HUD.Update(0.45, "NET_OK", "NET: Library source received (" .. tostring(#librarySource) .. " bytes)")
+            -- =====================================================
+            -- SECTION: SUPPORTED GAMES (List + Button Teleport)
+            -- =====================================================
+            MainTab:CreateSection("Supported Games")
+            
+            for _, gameData in ipairs(GameDatabase) do
+                MainTab:CreateButton({
+                    Title = "🎮 " .. gameData.Name .. " — Join Game",
+                    Callback = function()
+                        LunoLibrary:Notify({
+                            Title = "LUNO Teleport",
+                            Content = "Menuju ke " .. gameData.Name .. "...",
+                            Duration = 2
+                        })
+                        pcall(function()
+                            TeleportService:Teleport(gameData.PlaceId, LocalPlayer)
+                        end)
+                    end
+                })
+            end
 
-	local compiledLib, compileErr = loadstring(librarySource)
-	if not compiledLib then
-		HUD.Update(0.55, "COMPILE_ERR", "ERR: Failed to compile UI Library! (" .. tostring(compileErr) .. ")")
-		task.wait(2)
-		HUD.FadeOut()
-		return
-	end
-
-	local runOk, LunoLibrary = pcall(compiledLib)
-	if not runOk or not LunoLibrary then
-		HUD.Update(0.60, "RUNTIME_ERR", "ERR: Library execution failed! (" .. tostring(LunoLibrary) .. ")")
-		task.wait(2)
-		HUD.FadeOut()
-		return
-	end
-
-	HUD.Update(0.65, "SYS_ANALYSIS", "MATCH: Scanning Place ID [" .. tostring(PlaceId) .. "]...")
-
-	local targetScriptURL = Config.GameModules[PlaceId]
-
-	if targetScriptURL then
-		HUD.Update(0.75, "GAME_MATCHED", "SUCCESS: Place ID Matched -> Downloading Module...")
-
-		local gameSource, gameErr = Net.Get(targetScriptURL)
-
-		if not gameSource then
-			HUD.Log("ERR: Failed to download game module! (" .. tostring(gameErr) .. ")")
-			warn("[LUNO] Failed to download game module from: " .. targetScriptURL)
-			warn("[LUNO] Error: " .. tostring(gameErr))
-			HUD.Update(0.85, "FALLBACK", "WARN: Falling back to Universal Mode...")
-			task.wait(1.5)
-			HUD.FadeOut()
-			targetScriptURL = nil
-		else
-			HUD.Update(0.85, "COMPILING", "COMPILE: Assembling Game Module...")
-
-			local compiledGame, compileGameErr = loadstring(gameSource)
-			if not compiledGame then
-				HUD.Log("ERR: Failed to compile game module!")
-				warn("[LUNO] Compile Error: " .. tostring(compileGameErr))
-				HUD.Update(0.90, "COMPILE_FAIL", "ERR: Module compile failed, check console (F9)")
-				task.wait(2)
-				HUD.FadeOut()
-				return
-			end
-
-			HUD.Update(1.00, "SYSTEM_READY", "LAUNCH: Executing Game Module...")
-			task.wait(0.4)
-			HUD.FadeOut()
-
-			local execOk, execErr = pcall(compiledGame)
-			if not execOk then
-				warn("[LUNO] Game Module Runtime Error: " .. tostring(execErr))
-			end
-
-			return
-		end
-	end
-
-	if not targetScriptURL then
-		HUD.Update(0.85, "NO_DIRECT_MATCH", "WARN: Place Unlisted -> Initializing Universal Kernel...")
-		HUD.Update(1.00, "SYSTEM_READY", "LAUNCH: Opening Universal LUNO Window...")
-		task.wait(0.4)
-		HUD.FadeOut()
-
-		LaunchUniversalMode(LunoLibrary)
-	end
+            -- =====================================================
+            -- SECTION: UNIVERSAL UTILITIES
+            -- =====================================================
+            MainTab:CreateSection("Universal Utilities")
+            MainTab:CreateButton({
+                Title = "Rejoin Server",
+                Callback = function()
+                    pcall(function()
+                        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+                    end)
+                end
+            })
+            
+            MainTab:CreateButton({
+                Title = "Copy Discord Invite",
+                Callback = function()
+                    if setclipboard then
+                        setclipboard("https://discord.gg/lunar")
+                        LunoLibrary:Notify({
+                            Title = "Clipboard",
+                            Content = "Discord invite link copied!",
+                            Duration = 2
+                        })
+                    end
+                end
+            })
+        end)
+        
+        if not populateSuccess then
+            warn("[LUNO] Populate Window Error: " .. tostring(populateErr))
+            pcall(function()
+                LunoLibrary:Notify({
+                    Title = "LUNO Error",
+                    Content = "Terjadi error saat memuat UI. Cek console (F9).",
+                    Duration = 5
+                })
+            end)
+        end
+    end
 end)
