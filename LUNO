@@ -55,6 +55,13 @@ local GameDatabase = {
         PlaceIdForTeleport = 93091759101123,
         ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/AirDrop%20Arena"
     },
+     {
+        Name = "Huss Valley",
+        MatchType = "PlaceId",
+        MatchValue = 112568283214131,
+        PlaceIdForTeleport = 112568283214131,
+        ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/IdleMafia"
+    },
 }
 
 local SupportedByPlaceId = {}
