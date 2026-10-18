@@ -58,8 +58,8 @@ local GameDatabase = {
      {
         Name = "Huss Valley",
         MatchType = "PlaceId",
-        MatchValue = 112568283214131,
-        PlaceIdForTeleport = 112568283214131,
+        MatchValue = 107535308163741,
+        PlaceIdForTeleport = 107535308163741,
         ScriptURL = "https://raw.githubusercontent.com/lyoraaHBX/LyoraListGame/refs/heads/main/HussValley"
     },
 }
